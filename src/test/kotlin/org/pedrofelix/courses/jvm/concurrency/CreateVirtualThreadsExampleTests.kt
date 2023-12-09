@@ -40,7 +40,7 @@ class CreateVirtualThreadsExampleTests {
     }
 
     /**
-     * Using an executor to create virtual threads
+     * Using an executor to create virtual threads.
      */
     @Test
     fun can_create_virtual_threads_using_executors() {
@@ -49,5 +49,21 @@ class CreateVirtualThreadsExampleTests {
             Thread.currentThread().isVirtual
         }
         assertTrue(future.get())
+    }
+
+    /**
+     * Can create a significant amount of virtual threads.
+     */
+    @Test
+    fun can_lots_of_virtual_threads() {
+        val nOfThreads = 100_000
+        val latch = CountDownLatch(nOfThreads)
+        repeat(nOfThreads) {
+            Thread.startVirtualThread {
+                Thread.sleep(1000)
+                latch.countDown()
+            }
+        }
+        latch.await()
     }
 }
