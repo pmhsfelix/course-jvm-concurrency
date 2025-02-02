@@ -1,2 +1,3 @@
 # course-jvm-concurrency
-Notes about concurrency on the JVM.
+
+A course on Concurrent Programming for the JVM.
