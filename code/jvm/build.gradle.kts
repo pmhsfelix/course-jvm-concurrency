@@ -1,6 +1,6 @@
 plugins {
     kotlin("jvm") version "2.1.0"
-    id("org.jlleitschuh.gradle.ktlint") version "12.1.1"
+    id("org.jlleitschuh.gradle.ktlint") version "12.1.2"
 }
 
 group = "org.pedrofelix.concurrency-course"
@@ -23,4 +23,8 @@ tasks.test {
 }
 kotlin {
     jvmToolchain(21)
+}
+ktlint {
+    version = "1.5.0"
+    enableExperimentalRules = true
 }

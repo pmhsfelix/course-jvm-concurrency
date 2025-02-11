@@ -9,15 +9,15 @@ import java.net.ServerSocket
 import java.net.Socket
 import java.util.Locale
 
-class EchoServer0SingleThreaded {
+class EchoServer1ThreadPerClient {
     companion object {
-        private val logger: Logger = LoggerFactory.getLogger(EchoServer0SingleThreaded::class.java)
+        private val logger: Logger = LoggerFactory.getLogger(EchoServer1ThreadPerClient::class.java)
         private const val EXIT_LINE = "exit"
         const val PORT = 8080
 
         @JvmStatic
         fun main(args: Array<String> = arrayOf()) {
-            EchoServer0SingleThreaded().run("0.0.0.0", PORT)
+            EchoServer1ThreadPerClient().run("0.0.0.0", PORT)
         }
     }
 
@@ -42,7 +42,13 @@ class EchoServer0SingleThreaded {
             logger.info("server socket is waiting for an incoming connection")
             val socket = serverSocket.accept()
             logger.info("incoming connection accepted, remote address is {}", socket.inetAddress.hostAddress)
-            echoLoop(socket, ++clientId)
+
+            // QUESTION: could this increment be inside the lambda expression passed to Thread.ofPlatform().start?
+            val id = ++clientId
+            // NOTE this is the main change when compared with EchoServer0SingleThreaded
+            Thread.ofPlatform().start {
+                echoLoop(socket, id)
+            }
         }
     }
 

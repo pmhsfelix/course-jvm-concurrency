@@ -9,15 +9,15 @@ import java.net.ServerSocket
 import java.net.Socket
 import java.util.Locale
 
-class EchoServer0SingleThreaded {
+class EchoServer2ThreadPerClientWithMessageCount {
     companion object {
-        private val logger: Logger = LoggerFactory.getLogger(EchoServer0SingleThreaded::class.java)
+        private val logger: Logger = LoggerFactory.getLogger(EchoServer2ThreadPerClientWithMessageCount::class.java)
         private const val EXIT_LINE = "exit"
-        const val PORT = 8080
+        private const val PORT = 8080
 
         @JvmStatic
         fun main(args: Array<String> = arrayOf()) {
-            EchoServer0SingleThreaded().run("0.0.0.0", PORT)
+            EchoServer2ThreadPerClientWithMessageCount().run("0.0.0.0", PORT)
         }
     }
 
@@ -33,6 +33,9 @@ class EchoServer0SingleThreaded {
         }
     }
 
+    // NOTE: mutable field shared by all threads using the same instance
+    private var messageCounter = 0
+
     /**
      * Keeps accepting client connections.
      */
@@ -42,7 +45,15 @@ class EchoServer0SingleThreaded {
             logger.info("server socket is waiting for an incoming connection")
             val socket = serverSocket.accept()
             logger.info("incoming connection accepted, remote address is {}", socket.inetAddress.hostAddress)
-            echoLoop(socket, ++clientId)
+
+            // QUESTION: could this increment and assignment be inside the lambda expression
+            // passed to Thread.ofPlatform().start?
+            clientId += 1
+            val id = clientId
+            // NOTE this is the main change when compared with EchoServer0SingleThreaded
+            Thread.ofPlatform().start {
+                echoLoop(socket, id)
+            }
         }
     }
 
@@ -74,8 +85,16 @@ class EchoServer0SingleThreaded {
                                 "Received line '{}', echoing it back",
                                 line,
                             )
+                            // NOTE: these two assignments are syntactically very similar
+                            // but their consequences are very different!
                             lineNo += 1
-                            writer.writeLine("%d: %s", lineNo, line.uppercase(Locale.getDefault()))
+                            messageCounter += 1
+                            writer.writeLine(
+                                "%d, %d: %s",
+                                lineNo,
+                                messageCounter,
+                                line.uppercase(Locale.getDefault()),
+                            )
                         }
                     }
                 }
