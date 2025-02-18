@@ -88,7 +88,7 @@ A solution to the previous limitation is to create multiple control flows via th
 
 The _thread_ is the mechanism to define and execute a new flow of control, i.e. a new sequence of statements, in the _same_ program.
 
-The multi-threaded server (link:./../code/jvm/src/main/kotlin/org/pedrofelix/concurrency/course/apps/tcpserver/EchoServer1ThreadPerClient.kt[source code]) implementation uses the ability to create and start multiple threads, provided by the JVM platform.
+The multi-threaded server (link:../../code/jvm/src/main/kotlin/org/pedrofelix/concurrency/course/apps/tcpserver/EchoServer1ThreadPerClient.kt[source code]) implementation uses the ability to create and start multiple threads, provided by the JVM platform.
 
 [source, kotlin]
 ----
