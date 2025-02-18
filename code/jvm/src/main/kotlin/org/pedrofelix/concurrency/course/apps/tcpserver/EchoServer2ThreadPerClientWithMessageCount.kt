@@ -40,6 +40,7 @@ class EchoServer2ThreadPerClientWithMessageCount {
      * Keeps accepting client connections.
      */
     private fun acceptLoop(serverSocket: ServerSocket) {
+        val threadBuilder: Thread.Builder = Thread.ofPlatform()
         var clientId = 0
         while (true) {
             logger.info("server socket is waiting for an incoming connection")
@@ -51,7 +52,7 @@ class EchoServer2ThreadPerClientWithMessageCount {
             clientId += 1
             val id = clientId
             // NOTE this is the main change when compared with EchoServer0SingleThreaded
-            Thread.ofPlatform().start {
+            threadBuilder.start {
                 echoLoop(socket, id)
             }
         }
