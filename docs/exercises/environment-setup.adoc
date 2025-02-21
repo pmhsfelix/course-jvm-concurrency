@@ -5,7 +5,7 @@
         *** link:https://github.com/isel-leic-pc/s2425v-li41d-li41n[https://github.com/isel-leic-pc/s2425v-li41d-li41n].
         *** link:https://github.com/pmhsfelix/course-jvm-concurrency[https://github.com/pmhsfelix/course-jvm-concurrency].
     ** Create a local clone of the repositories.
-    ** Run `./gradlew check` (or `gradle check` if on windows) in the `code/jvm` folder. If successful, then your machine probably everything required to run the JVM-based projects.
+    ** Run `./gradlew check` (or `gradlew check` if on windows) in the `code/jvm` folder. If successful, then your machine probably everything required to run the JVM-based projects.
     ** Create an IntelliJ project using the source code available in the `code/jvm` (use the `build.gradle` file when adding the project).
     ** If the source code has JUnit based tests, run them from inside IntelliJ.
 
