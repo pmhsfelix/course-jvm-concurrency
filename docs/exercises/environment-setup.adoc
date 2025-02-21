@@ -1,0 +1,24 @@
+= Exercises for the introduction to concurrent programming
+
+* Running the examples provided during the classes
+    ** For each one of the following repositories
+        *** link:https://github.com/isel-leic-pc/s2425v-li41d-li41n[https://github.com/isel-leic-pc/s2425v-li41d-li41n].
+        *** link:https://github.com/pmhsfelix/course-jvm-concurrency[https://github.com/pmhsfelix/course-jvm-concurrency].
+    ** Create a local clone of the repositories.
+    ** Run `./gradlew check` (or `gradle check` if on windows) in the `code/jvm` folder. If successful, then your machine probably everything required to run the JVM-based projects.
+    ** Create an IntelliJ project using the source code available in the `code/jvm` (use the `build.gradle` file when adding the project).
+    ** If the source code has JUnit based tests, run them from inside IntelliJ.
+
+* In the `code/jvm` project present in link:https://github.com/pmhsfelix/course-jvm-concurrency[https://github.com/pmhsfelix/course-jvm-concurrency]:
+
+    ** For each server application present in the repo:
+
+        *** Start the server and observe the logs.
+        *** Use a telnet client (e.g. such as `nc` on macOS or `telnet` or `PuTTY` on Windows) to send and receive sequences of characters.
+        *** Observe which server implementations handle more than one connected client.
+
+    ** Analyze the tests present in the `ThreadingHazardsTests` class. Run each test and observe the outcome. Change some assertions from `assertNotEquals` to `assertEquals` and observe the results.
+
+* Create a local repository for your own experiments, with a Gradle-based JVM project.
+
+* In the previous repository, create a unit test that illustrates concurrency data hazards when multiple threads mutate a shared `LinkedList` instance.
