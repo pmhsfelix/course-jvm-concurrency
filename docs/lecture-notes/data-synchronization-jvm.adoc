@@ -70,7 +70,7 @@ Instead, they have `lock` and `unlock` methods that need to be explicitly used.
 Special care needs to be taken to ensure that when a thread exits a lock-protected code block the lock is indeed released.
 The Kotlin standard library provides te `Lock.withLock` function that receives another function and runs it in possession of the lock, ensuring the lock release at the end, event if an exception was thrown.
 
-.`withLock``
+.The `withLock` function
 [source, kotlin]
 ----
 public inline fun <T> Lock.withLock(action: () -> T): T {
