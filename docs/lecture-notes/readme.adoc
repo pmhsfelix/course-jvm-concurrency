@@ -6,3 +6,4 @@ Lecture Notes
 * link:platform-threads-introduction.adoc[Platform threads].
 * link:threads-in-the-jvm.adoc[Threads in the JVM].
 * link:uthreads.adoc[_uthreads_].
+* link:data-synchronization-jvm.adoc[Data synchronization in the JVM]. 
