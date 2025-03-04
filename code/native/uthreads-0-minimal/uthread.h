@@ -19,6 +19,14 @@ void ut_init();
 
 /**
  * Creates a new thread in the ready state.
+ * - allocate space for the thread descriptor
+ * - allocate space for the thread's stack
+ * - Note: in uthreads-0-minimal, both the thread descriptor and the thread stack
+ *         will be in the same allocated block.
+ * - initialize the stack
+ *   remember the context_switch *assumes* that the stack of the next thread 
+ *   has the context put there by a previous context_switch
+ * - adds the thread descriptor to the tail of the ready queue.
  */
 uthread_t *ut_create(start_routine_t, uint64_t arg);
 

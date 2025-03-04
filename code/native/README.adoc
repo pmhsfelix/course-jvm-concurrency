@@ -1,1 +1,10 @@
 = uthreads - user mode threads
+
+This folder contains of a set of examples used in the Concurrent Programming course, namely the _uthreads_ user mode cooperative multi-threading system.
+See the link:https://github.com/pmhsfelix/course-jvm-concurrency/blob/main/docs/lecture-notes/uthreads.adoc[uthreads - User Mode Cooperative Threads] for a more detailed description of this system.
+See link:https://github.com/pmhsfelix/course-jvm-concurrency/blob/main/docs/lecture-notes/uthreads.adoc#development-and-execution-environment[Development and execution environment] for information on how to explore, build, and run the example programs.
+
+* link:first[first] - illustrates how to build a tiny program composed by an assembly source file and a C source file, with the main goal of illustrating the interface between both.
+* link:uthreads-0-minimal[uthreads-0-minimal] - contains the first _uthreads_ version, without any control synchronization and with just a `ut_yield` function that keeps the calling thread in the _ready_ (or _running_) state.
+* link:uthreads-1-join[uthreads-1-join] - contains the second _threads_ version, adding control synchronization by allow threads to wait for other threads to complete via a `ut_join` function.
+* link:uthreads-2-sockets[uthreads-2-sockets] - contains the third and last _uthreads_ version, adding support for socket I/O. It includes a small echo TCP server based on it.
