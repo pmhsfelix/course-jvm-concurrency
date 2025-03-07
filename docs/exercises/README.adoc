@@ -1,4 +1,4 @@
 = Exercises
 
 * link:environment-setup.adoc[Environment setup].
-* link:uthreads.doc[_uthreads_].
+* link:uthreads.adoc[_uthreads_].
