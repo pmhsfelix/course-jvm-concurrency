@@ -11,7 +11,7 @@ class FairNArySemaphoreUsingKernelStyle(
 ) {
     init {
         require(initialUnits >= 0) {
-            "Number of initial units must be greater than zero"
+            "Initial units must not be negative"
         }
     }
 
@@ -28,7 +28,7 @@ class FairNArySemaphoreUsingKernelStyle(
     }
 
     private var units = initialUnits
-    private val requests = NodeLinkedList<AcquireRequest>()
+    private val acquireRequests = NodeLinkedList<AcquireRequest>()
 
     fun release(releasedUnits: Long) =
         lock.withLock {
@@ -44,12 +44,12 @@ class FairNArySemaphoreUsingKernelStyle(
             var remainingTimeInNanos = timeout.inWholeNanoseconds
             // fast-path
             // available units and no other previous thread waiting
-            if (units >= requestedUnits && requests.empty) {
+            if (units >= requestedUnits && acquireRequests.empty) {
                 units -= requestedUnits
                 return true
             }
             // wait-path
-            val selfNode = requests.addLast(
+            val selfNode = acquireRequests.addLast(
                 AcquireRequest(
                     units = requestedUnits,
                     condition = lock.newCondition(),
@@ -63,7 +63,7 @@ class FairNArySemaphoreUsingKernelStyle(
                         Thread.currentThread().interrupt()
                         return true
                     }
-                    requests.remove(selfNode)
+                    acquireRequests.remove(selfNode)
                     completeAllPossible()
                     throw e
                 }
@@ -71,7 +71,7 @@ class FairNArySemaphoreUsingKernelStyle(
                     return true
                 }
                 if (remainingTimeInNanos <= 0) {
-                    requests.remove(selfNode)
+                    acquireRequests.remove(selfNode)
                     completeAllPossible()
                     return false
                 }
@@ -80,8 +80,8 @@ class FairNArySemaphoreUsingKernelStyle(
     }
 
     private fun completeAllPossible() {
-        while (requests.headCondition { units >= it.units }) {
-            val headRequest = requests.getAndRemoveFirst()
+        while (acquireRequests.headCondition { units >= it.units }) {
+            val headRequest = acquireRequests.getAndRemoveFirst()
             headRequest.value.isDone = true
             headRequest.value.condition.signal()
             units -= headRequest.value.units

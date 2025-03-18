@@ -10,26 +10,26 @@ class UnarySemaphoreUsingKernelStyle(
     initialUnits: Int,
 ) {
     init {
-        require(initialUnits > 0) { "Initial units must not be negative" }
+        require(initialUnits >= 0) { "Initial units must not be negative" }
     }
 
     private val lock = ReentrantLock()
     private var units = initialUnits
 
-    data class Request(
+    data class AcquireRequest(
         val condition: Condition,
         var isDone: Boolean = false,
     )
 
-    private val requests = NodeLinkedList<Request>()
+    private val acquireRequests = NodeLinkedList<AcquireRequest>()
 
     fun release() =
         lock.withLock {
             units += 1
-            val headRequest = requests.headNode
+            val headRequest = acquireRequests.headNode
             if (headRequest != null) {
                 units -= 1
-                requests.remove(headRequest)
+                acquireRequests.remove(headRequest)
                 headRequest.value.condition.signal()
                 headRequest.value.isDone = true
             }
@@ -47,8 +47,8 @@ class UnarySemaphoreUsingKernelStyle(
             }
             // wait-path
             var timeoutInNanos = timeoutUnits.toNanos(timeout)
-            val selfNode = requests.addLast(
-                Request(condition = lock.newCondition()),
+            val selfNode = acquireRequests.addLast(
+                AcquireRequest(condition = lock.newCondition()),
             )
             while (true) {
                 try {
@@ -60,7 +60,7 @@ class UnarySemaphoreUsingKernelStyle(
                         Thread.currentThread().interrupt()
                         return true
                     }
-                    requests.remove(selfNode)
+                    acquireRequests.remove(selfNode)
                     throw ex
                 }
                 // test for success
@@ -69,7 +69,7 @@ class UnarySemaphoreUsingKernelStyle(
                 }
                 // test for timeout
                 if (timeoutInNanos <= 0) {
-                    requests.remove(selfNode)
+                    acquireRequests.remove(selfNode)
                     return false
                 }
             }

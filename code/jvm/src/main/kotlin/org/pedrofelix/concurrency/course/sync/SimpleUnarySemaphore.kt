@@ -38,6 +38,7 @@ class SimpleUnarySemaphore(
         lock.withLock {
             var remainingTimeoutInNanos = timeoutUnit.toNanos(timeout)
             while (units == 0) {
+                // Must be done after ensuring !(units > 0) to avoid losing signals
                 if (remainingTimeoutInNanos < 0) {
                     return false
                 }
