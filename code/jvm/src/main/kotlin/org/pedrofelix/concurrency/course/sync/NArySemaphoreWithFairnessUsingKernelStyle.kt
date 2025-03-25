@@ -6,7 +6,14 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 import kotlin.time.Duration
 
-class FairNArySemaphoreUsingKernelStyle(
+/**
+ * N-ary semaphore using a _kernel-style_ design and implementation.
+ * - The number of units to acquire is stored in each [AcquireRequest] instance.
+ * - It is now *possible* to simultaneously have available units and pending acquire requests,
+ *   if the first acquire requests more than the available units.
+ * - Also, an acquire operation giving up may create conditions to other acquire operations to complete successfully.
+ */
+class NArySemaphoreWithFairnessUsingKernelStyle(
     initialUnits: Long,
 ) {
     init {

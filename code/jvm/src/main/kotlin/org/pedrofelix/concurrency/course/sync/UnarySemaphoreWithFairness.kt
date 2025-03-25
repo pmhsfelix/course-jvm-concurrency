@@ -27,7 +27,7 @@ import kotlin.concurrent.withLock
  */
 class UnarySemaphoreWithFairness(
     initialUnits: Int,
-) {
+) : UnarySemaphore {
     init {
         require(initialUnits >= 0) { "Initial units must be non-negative." }
     }
@@ -37,9 +37,9 @@ class UnarySemaphoreWithFairness(
     private var units = initialUnits
     private val requesters = NodeLinkedList<Thread>()
 
-    fun tryAcquire(
+    override fun tryAcquire(
         timeout: Long,
-        timeoutUnits: TimeUnit,
+        timeoutUnit: TimeUnit,
     ): Boolean {
         lock.withLock {
             // fast-path
@@ -48,7 +48,7 @@ class UnarySemaphoreWithFairness(
                 return true
             }
             // wait-path
-            var timeoutInNanos = timeoutUnits.toNanos(timeout)
+            var timeoutInNanos = timeoutUnit.toNanos(timeout)
             val selfNode: NodeLinkedList.Node<Thread> = requesters.addLast(Thread.currentThread())
             while (true) {
                 try {
@@ -73,7 +73,7 @@ class UnarySemaphoreWithFairness(
         }
     }
 
-    fun release() =
+    override fun release() =
         lock.withLock {
             units += 1
             signalAllIfNeeded()

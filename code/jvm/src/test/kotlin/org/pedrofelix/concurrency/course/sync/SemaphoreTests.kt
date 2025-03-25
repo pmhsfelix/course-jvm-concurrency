@@ -18,20 +18,33 @@ class SemaphoreTests {
     }
 
     @Test
-    fun `stress test unary semaphore`() {
-        val sem = SimpleUnarySemaphore(INITIAL_UNITS)
+    fun `stress test SimpleUnarySemaphore`() {
+        stressTestUnarySemaphore(SimpleUnarySemaphore(INITIAL_UNITS))
+    }
+
+    @Test
+    fun `stress test UnarySemaphoreWithFairness`() {
+        stressTestUnarySemaphore(UnarySemaphoreWithFairness(INITIAL_UNITS))
+    }
+
+    @Test
+    fun `stress test UnarySemaphoreUsingKernelStyle`() {
+        stressTestUnarySemaphore(UnarySemaphoreUsingKernelStyle(INITIAL_UNITS))
+    }
+
+    private fun stressTestUnarySemaphore(semaphore: UnarySemaphore) {
         val units = AtomicInteger(INITIAL_UNITS)
         val testHelper = TestHelper(5.seconds)
         testHelper.createAndStartMultiple(N_OF_THREADS) { _, isDone ->
             while (!isDone()) {
-                assertTrue(sem.tryAcquire(1_000_000, TimeUnit.SECONDS))
+                assertTrue(semaphore.tryAcquire(1_000_000, TimeUnit.SECONDS))
                 try {
                     val observedUnits = units.decrementAndGet()
                     assertTrue(observedUnits >= 0)
                     Thread.yield()
                 } finally {
                     units.incrementAndGet()
-                    sem.release()
+                    semaphore.release()
                 }
             }
         }
@@ -40,7 +53,7 @@ class SemaphoreTests {
 
     @Test
     fun `stress test N-ary semaphore`() {
-        val sem = FairNArySemaphoreUsingKernelStyle(INITIAL_UNITS.toLong())
+        val sem = NArySemaphoreWithFairnessUsingKernelStyle(INITIAL_UNITS.toLong())
         val units = AtomicInteger(INITIAL_UNITS)
         val testHelper = TestHelper(5.seconds)
         testHelper.createAndStartMultiple(N_OF_THREADS) { _, isDone ->
@@ -59,7 +72,7 @@ class SemaphoreTests {
 
     @Test
     fun `interrupt test`() {
-        val sem = FairNArySemaphoreUsingKernelStyle(3)
+        val sem = NArySemaphoreWithFairnessUsingKernelStyle(3)
         val testHelper = TestHelper(10.seconds)
         val th1 = testHelper.thread {
             assertThrows<InterruptedException> { sem.tryAcquire(4, INFINITE) }

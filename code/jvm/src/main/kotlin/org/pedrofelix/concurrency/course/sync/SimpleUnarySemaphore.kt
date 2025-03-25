@@ -15,7 +15,7 @@ import kotlin.concurrent.withLock
  */
 class SimpleUnarySemaphore(
     initialUnits: Int,
-) {
+) : UnarySemaphore {
     private val lock = ReentrantLock()
     private val condition = lock.newCondition()
     private var units = initialUnits
@@ -24,14 +24,14 @@ class SimpleUnarySemaphore(
         require(initialUnits >= 0) { "initial units must not be negative." }
     }
 
-    fun release() =
+    override fun release() =
         lock.withLock {
             units += 1
             condition.signal()
         }
 
     @Throws(InterruptedException::class)
-    fun tryAcquire(
+    override fun tryAcquire(
         timeout: Long,
         timeoutUnit: TimeUnit,
     ): Boolean =
