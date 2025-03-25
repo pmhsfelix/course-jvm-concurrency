@@ -126,7 +126,7 @@ class IncorrectSynchronizationTests {
 
         // when: having threads inserting, removing, and iterating on the list
         val threadBuilder = Thread.ofPlatform()
-        val nOfReps = 500 * N_OF_REPS
+        val nOfReps = 50 * N_OF_REPS
         val insertingThreads = List(N_OF_THREADS) {
             threadBuilder.start {
                 repeat(nOfReps) {
@@ -136,15 +136,17 @@ class IncorrectSynchronizationTests {
         }
         val removingThreads = List(N_OF_THREADS) {
             threadBuilder.start {
-                repeat(nOfReps) {
-                    theList.removeHead()
+                exceptionRecorder.run {
+                    repeat(nOfReps) {
+                        theList.removeHead()
+                    }
                 }
             }
         }
         val iteratingThreads = List(N_OF_THREADS) {
             threadBuilder.start {
-                repeat(nOfReps) {
-                    exceptionRecorder.run {
+                exceptionRecorder.run {
+                    repeat(nOfReps) {
                         // There is an error in the following line
                         theList.sum()
                     }
