@@ -1,0 +1,241 @@
+= Exercises on coroutines and structured concurrency
+
+== Introduction
+
+Set of exercises about coroutines and structured concurrency.
+
+== Exercises
+
+For the execution of the code samples present in this set, ensure the following content is present in the file `src/main/resources/simplelogger.properties`.
+
+.Simple logger configuration
+[source, properties]
+----
+org.slf4j.simpleLogger.showDateTime=true
+----
+
+Also, ensure that the following dependencies are included.
+
+.Dependencies
+[source, properties]
+----
+dependencies {
+    implementation("org.slf4j:slf4j-api:2.0.16")
+    implementation("org.slf4j:slf4j-simple:2.0.16")
+    ...
+}
+----
+
+=== Exercise 0
+
+Consider the following definitions.
+
+.Exercise 0
+[source, kotlin]
+----
+private val logger = LoggerFactory.getLogger("labs")
+
+fun logJobState(job: Job) {
+    logger.info("isActive={}, isCancelled={}, isCompleted={}", job.isActive, job.isCancelled, job.isCompleted)
+}
+
+object Ex0 {
+    @JvmStatic
+    fun main(args: Array<String>) {
+        // alternative: runBlocking(Dispatchers.Default) {
+        runBlocking {
+            logger.info("top coroutine started")
+            launch {
+                logger.info("child coroutine started")
+            }
+            logger.info("Before thread sleep")
+            Thread.sleep(1000)
+            // alternative: delay(1000)
+            logger.info("After sleep/delay on top-coroutine")
+        }
+    }
+}
+----
+
+* Why does `child coroutine started` only appear after `After sleep/delay on top-coroutine`?
+
+* Will the behavior be different if `sleep` is replaced with `delay`? If so, explain why?
+
+* Will the behavior be different if we keep `sleep` and use 
+`runBlocking(Dispatchers.Default)` to start the top coroutine? If so, explain why?
+
+=== Exercise 1
+
+Consider the following definitions.
+
+.Exercise 1
+[source, kotlin]
+----
+object Ex1 {
+    @JvmStatic
+    fun main(args: Array<String>) {
+        runBlocking {
+            val continuationInterceptor: ContinuationInterceptor = coroutineContext[ContinuationInterceptor]
+                ?: throw IllegalStateException("coroutine context does not have expected element")
+
+            logger.info("step 0")
+            withContext(Dispatchers.Default) {
+                logger.info("step 1")
+                withContext(continuationInterceptor) {
+                    logger.info("step 2")
+                }
+                logger.info("step 3")
+            }
+            logger.info("step 4")
+        }
+    }
+}
+----
+
+* Without running the code, write down on which thread (or thread group) will each of the `logger.info` statements be executed.
+
+* Confirm your analysis by running the code.
+
+* What does the following statement do?
+----
+val continuationInterceptor: ContinuationInterceptor = coroutineContext[ContinuationInterceptor]
+                ?: throw IllegalStateException("coroutine context does not have expected element")
+----
+
+* Why can a `ContinuationInterceptor` be used as a context?
+
+=== Exercise 2
+
+Consider the following definitions.
+
+.Exercise 2
+[source, kotlin]
+----
+object Ex2 {
+    @JvmStatic
+    fun main(args: Array<String>) {
+        runBlocking {
+            val job = launch {
+                try {
+                    logger.info("Inner coroutine started")
+                    delay(2000)
+                } catch (ex: Throwable) {
+                    logger.info("Caught exception {} - {}", ex.javaClass.simpleName, ex.message)
+                }
+            }
+            delay(1000)
+            logJobState(job)
+            logger.info("Cancelling inner coroutine")
+            job.cancel()
+            logJobState(job)
+            delay(1)
+            logJobState(job)
+        }
+        logger.info("after runBlocking")
+    }
+}
+----
+
+* There is an exception being thrown inside the inner coroutine. Where is that exceptions thrown? Why is that exception thrown?
+
+* What is the type of the exception being thrown? Does that type derive from `kotlinx.coroutines.CancellationException`?
+
+* Why does the first log message after `job.cancel` have `isCompleted=false`, while the log message after `delay(1)` has `isCompleted=true`?
+
+=== Exercise 3
+
+Consider the following definitions.
+
+.Exercise 3
+[source, kotlin]
+----
+object Ex3 {
+    @JvmStatic
+    fun main(args: Array<String>) {
+        val scheduledExecutor = Executors.newSingleThreadScheduledExecutor()
+        try {
+            runBlocking {
+                logger.info("top coroutine starting")
+                val job = launch {
+                    try {
+                        suspendCancellableCoroutine { continuation ->
+                            scheduledExecutor.schedule(
+                                {
+                                    logger.info("Calling continuation")
+                                    continuation.resume(Unit)
+                                },
+                                1000,
+                                TimeUnit.MILLISECONDS
+                            )
+                        }
+                        logger.info("After suspendCancellableCoroutine")
+                    } catch (ex: Throwable) {
+                        logger.info("Caught exception {} - {}", ex.javaClass.simpleName, ex.message)
+                    }
+                }
+                delay(500)
+                job.cancel()
+            }
+        } finally {
+            scheduledExecutor.shutdown()
+        }
+    }
+}
+----
+
+* Is any exception thrown in the child coroutine? If so, why? Where is that exception thrown?
+
+* Is the `continuation.resume` called before or after the `suspendCancellableCoroutine` call completes? Do you see any problem?
+
+* What is the behavior if the delay duration is changed to 1500 milliseconds?
+
+* What is the behavior if the delay duration is kept at 500 milliseconds and the `suspendCancellableCoroutine` is replaced with a `suspendCoroutine`?
+
+=== Exercise 4
+
+Consider the following definitions.
+
+.Exercise 4
+[source, kotlin]
+----
+object Ex4 {
+    @JvmStatic
+    fun main(args: Array<String>) {
+        runBlocking {
+            logger.info("top starting")
+            val job1 = launch {
+                try {
+                    delay(1000)
+                    throw Exception("Oh No!")
+                    logger.info("inner 1 ending")
+                } catch (ex: Throwable) {
+                    logger.info("inner 1: caught exception {} - {}", ex.javaClass.simpleName, ex.message)
+                    throw ex
+                }
+            }
+
+            val job2 = launch {
+                try {
+                    delay(2000)
+                    logger.info("inner 2 ending")
+                } catch (ex: Throwable) {
+                    logger.info("inner 2: caught exception {} - {}", ex.javaClass.simpleName, ex.message)
+                }
+            }
+
+            try {
+                delay(2000)
+            } catch (ex: Throwable) {
+                logger.info("top: caught exception {} - {}", ex.javaClass.simpleName, ex.message)
+            }
+            logger.info("top ending")
+        }
+    }
+}
+----
+
+* Why are exceptions thrown in the top coroutine and in the second child coroutine? In which statements are those exceptions thrown?
+
+* Does the `runBlocking` call end by throwing an exception?
+
+* If `throw Exception(...)` is replaced with `throw CancellationException()`, what is the change in behavior?
