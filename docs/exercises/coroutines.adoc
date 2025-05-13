@@ -191,6 +191,8 @@ object Ex3 {
 
 * What is the behavior if the delay duration is kept at 500 milliseconds and the `suspendCancellableCoroutine` is replaced with a `suspendCoroutine`?
 
+* What happens if `shutdown` is _not_ called on the executor?
+
 === Exercise 4
 
 Consider the following definitions.

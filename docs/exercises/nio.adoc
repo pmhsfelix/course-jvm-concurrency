@@ -1,0 +1,194 @@
+= Exercises on asynchronous I/O in Java
+
+== Introduction
+
+Set of exercises about asynchronous I/O in Java and Kotlin.
+
+== Exercises
+
+For the execution of the code samples present in this set, ensure the following content is present in the file `src/main/resources/simplelogger.properties`.
+
+.Simple logger configuration
+[source, properties]
+----
+org.slf4j.simpleLogger.showDateTime=true
+----
+
+Also, ensure that the following dependencies are included.
+
+.Dependencies
+[source, properties]
+----
+dependencies {
+    implementation("org.slf4j:slf4j-api:2.0.16")
+    implementation("org.slf4j:slf4j-simple:2.0.16")
+    ...
+}
+----
+
+=== Exercise 0 - `ByteBuffer`
+
+Consider the following code
+
+.`ByteBuffer`` usage
+[source, kotlin]
+----
+
+private val logger = LoggerFactory.getLogger("nio2")
+
+private fun logByteBuffer(bb: ByteBuffer) {
+    logger.info("position:{}, limit: {}, capacity: {}", bb.position(), bb.limit(), bb.capacity())
+}
+
+object Ex0 {
+    @JvmStatic
+    fun main(args: Array<String>) {
+        // Create
+        val bb = ByteBuffer.allocate(16)
+        logByteBuffer(bb)
+        
+        // Write
+        bb.put(1)
+        logByteBuffer(bb)
+        bb.put(2)
+        logByteBuffer(bb)
+        
+        // Read
+        bb.flip()
+        logByteBuffer(bb)
+        logger.info("get(): {}", bb.get())
+        logByteBuffer(bb)
+        logger.info("get(): {}", bb.get())
+        logByteBuffer(bb)
+        try {
+            logger.info("get(): {}", bb.get())
+            logByteBuffer(bb)
+        } catch (ex: BufferUnderflowException) {
+            logger.info("BufferUnderflowException - {}", ex.message)
+        }
+    }
+}
+----
+
+* On the `ByteBuffer` link:https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/nio/ByteBuffer.html[documentation] see
+    ** How to create instances using `allocate` and `wrap`.
+    ** The meaning of the `position`, `limit`, and `capacity` properties .
+
+* Observe how the `position`, `limit`, and `capacity` properties change when bytes are inserted in the `ByteBuffer` using the `put` function.
+
+* Observe how these properties change when the `flip` function is called.
+
+* Observe how these properties change when the `get` function is called.
+
+* Observe what happens if the `flip` call is removed from the previous code, namely what is returned by the `get()` call and how the properties evolve.
+
+* Observe what happens when trying to read past the limit.
+
+* What needs to be done to start writing again in the beginning of the `ByteBuffer`?
+
+== Exercise 1 - `AsynchronousSocketChannel` - connection
+
+Consider the following code.
+
+.`AsynchronousSocketChannel` creation and connection
+[source, kotlin]
+----
+object Ex1 {
+
+    @JvmStatic
+    fun main(args: Array<String>) {
+        val socket = AsynchronousSocketChannel.open()
+        val latch = CountDownLatch(1)
+        logger.info("connecting...")
+        socket.connect(InetSocketAddress("httpbin.org", 80), Unit, object : CompletionHandler<Void, Unit> {
+            
+            override fun completed(result: Void?, attachment: Unit) {
+                logger.info("connected")
+                latch.countDown()
+            }
+
+            override fun failed(exc: Throwable, attachment: Unit) {
+                logger.info("connect failed - {}", exc.message)
+                latch.countDown()
+            }
+        })
+        logger.info("after connect call")
+        latch.await()
+    }
+}
+----
+
+* What is the third argument to the `connect` function?
+* Run this code and observe the result
+    ** In which thread is the `connected` message logged? Where was this thread created?
+    ** What is the `main` thread doing while the connection is being established?
+* Why is the `CountDownLatch` required?
+    ** What happens if the usage of the `CountDownLatch` is removed?
+* Change the port to `81` and observe the result
+    ** How is the error reported, namely in which thread?
+* Change the host name to `httpbin.org2`
+    ** How is the error reported, namely in which thread?
+
+== Exercise 2 - `AsynchronousSocketChannel` - reading and writing
+
+Consider the following code.
+
+.`AsynchronousSocketChannel` creation and connection
+[source, kotlin]
+----
+object Ex2 {
+
+    @JvmStatic
+    fun main(args: Array<String>) {
+        val socket = AsynchronousSocketChannel.open()
+        val latch = CountDownLatch(1)
+        logger.info("connecting...")
+        socket.connect(InetSocketAddress("httpbin.org", 80), Unit, object : CompletionHandler<Void, Unit> {
+            override fun completed(result: Void?, attachment: Unit) {
+                logger.info("connected")
+                val bytes = "GET /get HTTP/1.1\r\nHost: httpbin.org\r\nConnection: close\r\n\r\n".encodeToByteArray()
+                val writeBuffer = ByteBuffer.wrap(bytes)
+                socket.write(writeBuffer, Unit, object : CompletionHandler<Int, Unit> {
+
+                    override fun completed(result: Int, attachment: Unit?) {
+                        logger.info("write completed - {}", result)
+                        val readBuffer = ByteBuffer.allocate(1024)
+                        socket.read(readBuffer, Unit, object : CompletionHandler<Int, Unit> {
+
+                            override fun completed(result: Int, attachment: Unit?) {
+                                readBuffer.flip()
+                                val s = String(readBuffer.array(), 0, result)
+                                logger.info("read completed - {}", s)
+                                latch.countDown()
+                            }
+
+                            override fun failed(exc: Throwable, attachment: Unit?) {
+                                logger.info("read failed - {}", exc.message)
+                                latch.countDown()
+                            }
+                        })
+                    }
+
+                    override fun failed(exc: Throwable, attachment: Unit?) {
+                        logger.info("write failed - {}", exc.message)
+                        latch.countDown()
+                    }
+                })
+            }
+
+            override fun failed(exc: Throwable, attachment: Unit) {
+                logger.info("connect failed - {}", exc.message)
+                latch.countDown()
+            }
+        })
+        latch.await()
+    }
+}
+----
+
+* Run this code and observe the result.
+* Break the connection, writing, and reading code into distinct functions.
+* Change the size of the read buffer to 16 bytes and modify the program so that a full response is still presented.
+* Create `suspend` functions for connecting, reading, and writing (no cancellation support is needed, yet).  
+Rewrite the program using these functions and without using the `CountDownLatch`.
+* Add support for cancellation in the `suspend` functions.
